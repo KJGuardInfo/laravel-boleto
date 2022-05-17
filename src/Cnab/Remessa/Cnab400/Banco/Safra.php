@@ -1,7 +1,6 @@
 <?php
 namespace Eduardokum\LaravelBoleto\Cnab\Remessa\Cnab400\Banco;
 
-use Eduardokum\LaravelBoleto\CalculoDV;
 use Eduardokum\LaravelBoleto\Cnab\Remessa\Cnab400\AbstractRemessa;
 use Eduardokum\LaravelBoleto\Contracts\Boleto\Boleto as BoletoContract;
 use Eduardokum\LaravelBoleto\Contracts\Cnab\Remessa as RemessaContract;
@@ -67,7 +66,7 @@ class Safra extends AbstractRemessa implements RemessaContract
     
     /**
      * Valor total dos títulos
-     * @var flaot
+     * @var float
      */
     private $valorTotalTitulos;
 
@@ -79,9 +78,11 @@ class Safra extends AbstractRemessa implements RemessaContract
         $this->add(2, 2, '1');
         $this->add(3, 9, 'REMESSA');
         $this->add(10, 11, '01');
-        $this->add(12, 26, Util::formatCnab('X', 'COBRANCA', 15));
+        $this->add(12, 19, Util::formatCnab('X', 'COBRANCA', 8));
+        $this->add(20, 26, '');
         $this->add(27, 31, Util::formatCnab('9', $this->getAgencia(), 5));
-        $this->add(32, 40, Util::formatCnab('9', $this->getConta(), 9));
+        $this->add(32, 39, Util::formatCnab('9', $this->getConta(), 8));
+        $this->add(40, 40, Util::formatCnab('9', $this->getContaDv(), 1));
         $this->add(41, 46, '');
         $this->add(47, 76, Util::formatCnab('X', $this->getBeneficiario()->getNome(), 30));
         $this->add(77, 79, $this->getCodigoBanco());
@@ -103,7 +104,8 @@ class Safra extends AbstractRemessa implements RemessaContract
         $this->add(2, 3, strlen(Util::onlyNumbers($this->getBeneficiario()->getDocumento())) == 14 ? '02' : '01');
         $this->add(4, 17, Util::formatCnab('9L', $this->getBeneficiario()->getDocumento(), 14));
         $this->add(18, 22, Util::formatCnab('9', $this->getAgencia(), 5));
-        $this->add(23, 31, Util::formatCnab('9', $this->getConta(), 9));
+        $this->add(23, 30, Util::formatCnab('9', $this->getConta(), 8));
+        $this->add(31, 31, Util::formatCnab('9', $this->getContaDv(), 1));
         $this->add(32, 37, '');
         $this->add(38, 62, Util::formatCnab('X', $boleto->getNumeroControle(), 25)); // numero de controle
         $this->add(63, 71, Util::formatCnab('9', $boleto->getNossoNumero(), 9));
@@ -120,12 +122,12 @@ class Safra extends AbstractRemessa implements RemessaContract
         
         $this->add(108, 108, Util::formatCnab('9', $this->getCarteiraNumero(), 1));
         $this->add(109, 110, self::OCORRENCIA_ENTRADA_TITULO); // REGISTRO (SOMENTE ISSO???)
-        $this->add(111, 120, Util::formatCnab('9', $boleto->getNumeroDocumento(), 10));
+        $this->add(111, 120, Util::formatCnab('X', $boleto->getNumeroDocumento(), 10));
         $this->add(121, 126, $boleto->getDataVencimento()->format('dmy'));
         $this->add(127, 139, Util::formatCnab('9', $this->addTotal($boleto->getValor()), 13, 2));
         $this->add(140, 142, $this->getCodigoBanco());
         $this->add(143, 147, '00000');
-        $this->add(148, 149, $boleto->getEspecieDocCodigo());
+        $this->add(148, 149, Util::formatCnab('9', $boleto->getEspecieDoc(), 2));
         $this->add(150, 150, $boleto->getAceite() == 'SIM' ? 'A' : 'N');
         $this->add(151, 156, $boleto->getDataDocumento()->format('dmy'));
         
@@ -148,7 +150,8 @@ class Safra extends AbstractRemessa implements RemessaContract
         if ($boleto->getDiasProtesto() > 0) {
             $this->add(159, 160, self::INSTRUCAO_PROTESTO_AUTOMATICO);
         } else {
-            $this->add(159, 160, self::INSTRUCAO_NAO_PROTESTAR);
+            $this->add(157, 158, self::INSTRUCAO_NAO_PROTESTAR);
+            $this->add(159, 160, '00');
         }
         
         // Verifica juros
@@ -173,8 +176,7 @@ class Safra extends AbstractRemessa implements RemessaContract
         
         $this->add(219, 220, strlen(Util::onlyNumbers($boleto->getPagador()->getDocumento())) == 14 ? '02' : '01');
         $this->add(221, 234, Util::formatCnab('9L', $boleto->getPagador()->getDocumento(), 14));
-        $this->add(235, 264, Util::formatCnab('X', $boleto->getPagador()->getNome(), 30));
-        $this->add(265, 274, '');
+        $this->add(235, 274, Util::formatCnab('X', $boleto->getPagador()->getNome(), 40));
         $this->add(275, 314, Util::formatCnab('X', $boleto->getPagador()->getEndereco(), 40));
         $this->add(315, 324, Util::formatCnab('X', $boleto->getPagador()->getBairro(), 10));
         $this->add(325, 326, '');
